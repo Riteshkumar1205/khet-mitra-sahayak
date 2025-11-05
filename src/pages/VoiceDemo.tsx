@@ -2,29 +2,66 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import VoiceInput from '@/components/VoiceInput';
-import { ArrowLeft, MessageSquare, Sparkles } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Sparkles, Bot, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Message {
+  type: 'user' | 'ai';
+  text: string;
+  timestamp: Date;
+}
 
 const VoiceDemo = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [queries, setQueries] = useState<string[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleTranscriptComplete = (text: string) => {
-    setQueries(prev => [...prev, text]);
-    toast({
-      title: 'Query Received',
-      description: 'Processing your request...',
-    });
+  const handleTranscriptComplete = async (text: string) => {
+    if (!text.trim()) return;
 
-    // Simulate AI response
-    setTimeout(() => {
-      toast({
-        title: 'Response Ready',
-        description: 'Here is information based on your query',
+    // Add user message
+    const userMessage: Message = {
+      type: 'user',
+      text: text.trim(),
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, userMessage]);
+    setIsProcessing(true);
+
+    try {
+      // Call AI farming advisor
+      const { data, error } = await supabase.functions.invoke('farming-advisor', {
+        body: { query: text.trim() }
       });
-    }, 1500);
+
+      if (error) throw error;
+
+      if (data?.response) {
+        const aiMessage: Message = {
+          type: 'ai',
+          text: data.response,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, aiMessage]);
+        
+        toast({
+          title: 'Response Ready',
+          description: 'AgriNova AI has analyzed your query',
+        });
+      }
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      toast({
+        title: 'Error',
+        description: 'Unable to process your query. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -97,31 +134,61 @@ const VoiceDemo = () => {
             </div>
           </Card>
 
-          {/* Recent Queries */}
-          {queries.length > 0 && (
+          {/* Conversation History */}
+          {messages.length > 0 && (
             <Card className="p-6">
-              <h3 className="text-lg font-bold text-foreground mb-4">
-                Your Recent Queries
+              <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-primary" />
+                Conversation with AgriNova AI
               </h3>
-              <div className="space-y-3">
-                {queries.map((query, index) => (
+              <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                {messages.map((message, index) => (
                   <div 
                     key={index}
-                    className="p-4 bg-primary/5 border-l-4 border-primary rounded-lg"
+                    className={`flex gap-3 ${message.type === 'ai' ? 'flex-row' : 'flex-row-reverse'}`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-muted-foreground mb-1">
-                          Query #{queries.length - index}
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      message.type === 'ai' ? 'bg-primary' : 'bg-accent'
+                    }`}>
+                      {message.type === 'ai' ? (
+                        <Bot className="w-5 h-5 text-white" />
+                      ) : (
+                        <User className="w-5 h-5 text-white" />
+                      )}
+                    </div>
+                    <div className={`flex-1 ${message.type === 'ai' ? 'text-left' : 'text-right'}`}>
+                      <div className={`inline-block p-4 rounded-lg ${
+                        message.type === 'ai' 
+                          ? 'bg-primary/5 border border-primary/20' 
+                          : 'bg-accent/10 border border-accent/20'
+                      }`}>
+                        <p className="text-foreground whitespace-pre-wrap">{message.text}</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {message.timestamp.toLocaleTimeString('en-IN', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
                         </p>
-                        <p className="text-foreground">{query}</p>
-                      </div>
-                      <div className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                        Processed
                       </div>
                     </div>
                   </div>
                 ))}
+                {isProcessing && (
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="inline-block p-4 rounded-lg bg-primary/5 border border-primary/20">
+                        <div className="flex gap-2">
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </Card>
           )}
