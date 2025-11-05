@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Mic, Leaf, Cloud, TrendingUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-farmland.jpg";
 
 const Hero = () => {
+  const navigate = useNavigate();
+  
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden">
       <div 
@@ -34,6 +37,7 @@ const Hero = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
             <Button 
               size="lg" 
+              onClick={() => navigate('/voice')}
               className="bg-accent hover:bg-accent/90 text-white text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all"
             >
               <Mic className="mr-2 h-5 w-5" />

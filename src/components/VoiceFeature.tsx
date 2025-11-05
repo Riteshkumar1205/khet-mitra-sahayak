@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Mic, Languages, MessageCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const languages = [
   "हिन्दी", "ਪੰਜਾਬੀ", "मराठी", "தமிழ்", "తెలుగు", "ગુજરાતી",
@@ -8,6 +9,8 @@ const languages = [
 ];
 
 const VoiceFeature = () => {
+  const navigate = useNavigate();
+  
   return (
     <section className="py-20 px-4 bg-primary/5">
       <div className="container mx-auto">
@@ -66,7 +69,11 @@ const VoiceFeature = () => {
                 </div>
               </div>
               
-              <Button size="lg" className="gradient-accent text-white hover:opacity-90">
+              <Button 
+                size="lg" 
+                onClick={() => navigate('/voice')}
+                className="gradient-accent text-white hover:opacity-90"
+              >
                 <Mic className="mr-2 h-5 w-5" />
                 Try Voice Input
               </Button>
